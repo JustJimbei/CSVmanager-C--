@@ -16,8 +16,6 @@ using namespace std;
 #define BLUE    "\033[34m"
 
 
-void arrangedNames(string Names[], string Emails[], string PhoneNumber[], int Limiter);
-
 bool checkAllDigit(const string& str);
 
 string validateDigit();
@@ -77,37 +75,12 @@ int main()
     }
 
     infoFile.close();
+
+    this_thread::sleep_for(chrono::seconds(3));
     cout << GREEN << "File Successfully Saved" << RESET << endl;
     return 0;
 }
 
-
-void arrangedNames(string Names[], string Emails[], string PhoneNumber[], int Limiter)
-{
-    for (int i = 0; i < Limiter; i++)
-    {
-        for (int j = 0; j < Limiter - i - 1; j++)
-        {
-            if (Names[i] > Names[i + 1])
-            {
-                string tempNames = Names[i];
-                Names[i] = Names[i + 1];
-                Names[i + 1] = tempNames;
-
-                string tempEmails = Emails[i];
-                Emails[i] = Emails[i + 1];
-                Emails[i + 1] = tempEmails;
-
-                string tempPhone = PhoneNumber[i];
-                PhoneNumber[i] = PhoneNumber[i + 1];
-                PhoneNumber[i + 1] = tempPhone; 
-            }
-            
-        }
-        
-    }
-    
-}
 
 
 bool checkAllDigit(const string& str)
