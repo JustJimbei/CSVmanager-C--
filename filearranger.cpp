@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 #include <chrono>
+#include <cctype>
 
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
@@ -39,17 +40,22 @@ int main()
 
     if (!fileInfo.is_open())
     {
-        cerr << RED << setw(15) << "Error!" << RESET << endl;
+        cerr << RED << setw(15) << "Error!\n" << RESET;
         return 1;
     }
 
+
+    cout << CYAN << "\nFetching File Data...\n" << RESET;
+    this_thread::sleep_for(chrono::seconds(2));
+    cout << MAGENTA << "\nPrinting Data\n" << RESET;
+    this_thread::sleep_for(chrono::seconds(3));
 
     cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
     cout << left << setw(2) << "|" << BLUE << setw(ID_W) << "No." << RESET << setw(2)
          << "|" << CYAN << setw(NAME_W) << "Names" << RESET << setw(2)
          << "|" << MAGENTA << setw(EMAIL_W) << "Emails" << RESET << setw(2)
          << "|" << GREEN << setw(PHONENUMBER_W) << "Phone Number" << RESET
-         << "|" << endl;
+         << "|\n";
     cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
     
     while (getline(fileInfo, lines))
@@ -72,7 +78,7 @@ int main()
 
         if (extractedDigit.empty())
         {
-            cerr << RED << "Data Empty! Row " << counter << RESET << endl;
+            cerr << RED << "Data Empty! Row\n" << counter << RESET;
             realPhoneNumbers[counter] = "0";
         }
         
@@ -84,7 +90,7 @@ int main()
             }
             catch (const std::exception &e)
             {
-                cerr << RED << "Data Error! Invalid Number format." << RESET << endl;
+                cerr << RED << "Data Error! Invalid Number format.\n" << RESET;
                 realPhoneNumbers[counter] = "0";
                 return 0;
             }
@@ -100,14 +106,82 @@ int main()
              << BLUE << setw(ID_W) << (i + 1) << RESET << setw(2) << "|"
              << CYAN << setw(NAME_W) << names[i] << RESET << setw(2) << "|"
              << MAGENTA << setw(EMAIL_W) << emails[i] << RESET << setw(2) << "|"
-             << GREEN << setw(PHONENUMBER_W) << realPhoneNumbers[i] << RESET << "|"
-             << endl;
+             << GREEN << setw(PHONENUMBER_W) << realPhoneNumbers[i] << RESET << "|\n";
     }
 
     cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
-
-
+    
     fileInfo.close();
+
+
+    fstream newInfoFile;
+    newInfoFile.open("NameArrangedDone.csv", ios::out);
+
+
+    arrangedNames(names, emails, realPhoneNumbers, counter);
+
+    newInfoFile << "Names" << ',' << "Emails" << "," << "Phone Numbers\n";
+
+
+    if (newInfoFile.is_open())
+    {
+        for (int i = 0; i < counter; i++)
+        {
+            newInfoFile << names[i] << "," << emails[i] << "," << realPhoneNumbers[i] << endl;
+        }
+        
+    }
+
+    newInfoFile.close();
+
+    char answer; 
+    cout << BLUE << "\nWould like to print the Arranged Data(y/n)? ";
+    cin >> answer;
+    cout << BLUE << "\n" << RESET;
+
+    char upperChar = toupper(answer);
+
+    if (upperChar == 'Y')
+    {
+        cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
+        cout << left << setw(2) << "|" << BLUE << setw(ID_W) << "No." << RESET << setw(2)
+         << "|" << CYAN << setw(NAME_W) << "Names" << RESET << setw(2)
+         << "|" << MAGENTA << setw(EMAIL_W) << "Emails" << RESET << setw(2)
+         << "|" << GREEN << setw(PHONENUMBER_W) << "Phone Number" << RESET
+         << "|\n";
+        cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
+
+        for (int i = 0; i < counter; i++)
+        {
+            cout << left << setw(2) << "|"
+                 << BLUE << setw(ID_W) << (i + 1) << RESET << setw(2) << "|"
+                 << CYAN << setw(NAME_W) << names[i] << RESET << setw(2) << "|"
+                 << MAGENTA << setw(EMAIL_W) << emails[i] << RESET << setw(2) << "|"
+                 << GREEN << setw(PHONENUMBER_W) << realPhoneNumbers[i] << RESET << "|\n";
+        }
+
+        cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
+        
+        cout << GREEN << "Saving Data...\n\n";
+        this_thread::sleep_for(chrono::seconds(2));
+        cout << GREEN << "Data Successfully Saved.\n\n";
+        this_thread::sleep_for(chrono::seconds(2));
+    }
+    
+    else if (upperChar == 'N')
+    {
+        cout << BLUE << "Existing Program\n\n" << RESET;
+        this_thread::sleep_for(chrono::seconds(3));
+    }
+
+    else
+    {
+        cerr << RED << "Error!\n\n" << RESET;
+    }
+
+
+    cout << YELLOW << "Program terminated.\n\n" << RESET;
+
     return 0;
 }
 
@@ -118,19 +192,19 @@ void arrangedNames(string Names[], string Emails[], string PhoneNumber[], int Li
     {
         for (int j = 0; j < Limiter - i - 1; j++)
         {
-            if (Names[i] > Names[i + 1])
+            if (Names[j] > Names[j + 1])
             {
-                string tempNames = Names[i];
-                Names[i] = Names[i + 1];
-                Names[i + 1] = tempNames;
+                string tempNames = Names[j];
+                Names[j] = Names[j + 1];
+                Names[j + 1] = tempNames;
 
-                string tempEmails = Emails[i];
-                Emails[i] = Emails[i + 1];
-                Emails[i + 1] = tempEmails;
+                string tempEmails = Emails[j];
+                Emails[j] = Emails[j + 1];
+                Emails[j + 1] = tempEmails;
 
-                string tempPhone = PhoneNumber[i];
-                PhoneNumber[i] = PhoneNumber[i + 1];
-                PhoneNumber[i + 1] = tempPhone; 
+                string tempPhone = PhoneNumber[j];
+                PhoneNumber[j] = PhoneNumber[j + 1];
+                PhoneNumber[j + 1] = tempPhone; 
             }
             
         }
