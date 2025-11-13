@@ -25,6 +25,7 @@ using namespace std;
 
 
 void arrangedNames(string Names[], string Emails[], string PhoneNumber[], int Limiter);
+void removeCSVRow(string filename, int rowToRemove);
 string extractNumber(string phoneNum);
 
 int main()
@@ -45,9 +46,9 @@ int main()
     }
 
 
-    cout << CYAN << "\nFetching File Data...\n" << RESET;
+    cout << CYAN << "Fetching File Data...\n" << RESET;
     this_thread::sleep_for(chrono::seconds(2));
-    cout << MAGENTA << "\nPrinting Data\n" << RESET;
+    cout << MAGENTA << "Printing Data\n" << RESET;
     this_thread::sleep_for(chrono::seconds(3));
 
     cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
@@ -115,7 +116,7 @@ int main()
 
 
     fstream newInfoFile;
-    newInfoFile.open("NameArrangedDone.csv", ios::out);
+    newInfoFile.open("NameArrangedDone.csv", ios::in | ios::out);
 
 
     arrangedNames(names, emails, realPhoneNumbers, counter);
@@ -132,55 +133,84 @@ int main()
         
     }
 
-    newInfoFile.close();
-
-    char answer; 
-    cout << BLUE << "\nWould like to print the Arranged Data(y/n)? ";
-    cin >> answer;
-    cout << BLUE << "\n" << RESET;
-
-    char upperChar = toupper(answer);
-
-    if (upperChar == 'Y')
+    bool Exit = true;
+    while (Exit)
     {
-        cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
-        cout << left << setw(2) << "|" << BLUE << setw(ID_W) << "No." << RESET << setw(2)
-         << "|" << CYAN << setw(NAME_W) << "Names" << RESET << setw(2)
-         << "|" << MAGENTA << setw(EMAIL_W) << "Emails" << RESET << setw(2)
-         << "|" << GREEN << setw(PHONENUMBER_W) << "Phone Number" << RESET
-         << "|\n";
-        cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
+        char answer; 
+        cout << BLUE << "\n(P) to print the new data\n";
+        cout << BLUE << "(R) to remove a row(n) in data\n";
+        cout << BLUE << "(C) to add another data\n";
+        cout << BLUE << "(E) to exit\n";
+        cout << "Choice: ";
+        cin >> answer;
+        cout << BLUE << "\n" << RESET;
 
-        for (int i = 0; i < counter; i++)
+        char upperChar = toupper(answer);
+
+        if (upperChar == 'P')
         {
-            cout << left << setw(2) << "|"
-                 << BLUE << setw(ID_W) << (i + 1) << RESET << setw(2) << "|"
-                 << CYAN << setw(NAME_W) << names[i] << RESET << setw(2) << "|"
-                 << MAGENTA << setw(EMAIL_W) << emails[i] << RESET << setw(2) << "|"
-                 << GREEN << setw(PHONENUMBER_W) << realPhoneNumbers[i] << RESET << "|\n";
+            cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
+            cout << left << setw(2) << "|" << BLUE << setw(ID_W) << "No." << RESET << setw(2)
+            << "|" << CYAN << setw(NAME_W) << "Names" << RESET << setw(2)
+            << "|" << MAGENTA << setw(EMAIL_W) << "Emails" << RESET << setw(2)
+            << "|" << GREEN << setw(PHONENUMBER_W) << "Phone Number" << RESET
+            << "|\n";
+            cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
+
+            for (int i = 0; i < counter; i++)
+            {
+                cout << left << setw(2) << "|"
+                    << BLUE << setw(ID_W) << (i + 1) << RESET << setw(2) << "|"
+                    << CYAN << setw(NAME_W) << names[i] << RESET << setw(2) << "|"
+                    << MAGENTA << setw(EMAIL_W) << emails[i] << RESET << setw(2) << "|"
+                    << GREEN << setw(PHONENUMBER_W) << realPhoneNumbers[i] << RESET << "|\n";
+            }
+
+            cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
+        }
+        
+        else if (upperChar == 'R')
+        {
+            int rowNumber;
+            cout << BLUE << "Enter the row number to remove (1-" << counter << "): ";
+            cin >> rowNumber;
+            cout << RESET << "\n";
+
+            removeCSVRow("NameArrangedDone.csv", rowNumber);
+
+            cout << CYAN << "Removing Row...\n";
+            this_thread::sleep_for(chrono::seconds(2));
+            cout << "Row Successfully Removed.\n" << RESET;
         }
 
-        cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
-        
-        cout << GREEN << "Saving Data...\n\n";
-        this_thread::sleep_for(chrono::seconds(2));
-        cout << GREEN << "Data Successfully Saved.\n\n";
-        this_thread::sleep_for(chrono::seconds(2));
-    }
-    
-    else if (upperChar == 'N')
-    {
-        cout << BLUE << "Existing Program\n\n" << RESET;
-        this_thread::sleep_for(chrono::seconds(3));
+        /*else if (upperChar == 'R')
+        {
+
+        }*/
+
+        else if (upperChar == 'E')
+        {
+            cout << BLUE << "Existing Program\n\n" << RESET;
+            this_thread::sleep_for(chrono::seconds(3));
+            Exit = false;
+        }
+
+        else
+        {
+            cerr << RED << "Error!\n\n" << RESET;
+        }
+
     }
 
-    else
-    {
-        cerr << RED << "Error!\n\n" << RESET;
-    }
 
+    newInfoFile.close();
+    newInfoFile.open("NameArrangedDone.csv", ios::in | ios::trunc);
 
-    cout << YELLOW << "Program terminated.\n\n" << RESET;
+    cout << GREEN << "Saving Data...\n";
+    this_thread::sleep_for(chrono::seconds(2));
+    cout << GREEN << "Data Successfully Saved.\n";
+    this_thread::sleep_for(chrono::seconds(2));
+    cout << YELLOW << "Program terminated.\n" << RESET;
 
     return 0;
 }
@@ -212,6 +242,37 @@ void arrangedNames(string Names[], string Emails[], string PhoneNumber[], int Li
     }
     
 }
+
+
+void removeCSVRow(string filename, int rowToRemove)
+{
+    fstream file(filename, ios::in);
+    if (!file.is_open())
+    {
+        cerr << RED << "Error opening file for row removal.\n" << RESET;
+        return;
+    }
+
+    string content = "";
+    string line;
+    int currentRow = 0;
+
+
+    while (getline(file, line))
+    {
+        currentRow++;
+        if (currentRow == rowToRemove + 1) 
+            continue;
+        content += line + "\n";
+    }
+    file.close();
+
+
+    file.open(filename, ios::out | ios::trunc);
+    file << content;
+    file.close();
+}
+
 
 
 string extractNumber(string phoneNum)
