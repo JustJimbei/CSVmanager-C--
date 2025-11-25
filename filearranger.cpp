@@ -1,5 +1,4 @@
 #include <iostream>
-#include <algorithm>
 #include <iomanip>
 #include <fstream>
 #include <sstream>
@@ -23,6 +22,7 @@
 
 using namespace std;
 
+const int MAX_COLUMNS = 50;
 
 void arrangedNames(string Names[], string Emails[], string PhoneNumber[], int Limiter);
 void removeCSVRow(string filename, int rowToRemove);
@@ -37,6 +37,11 @@ int main()
         string names[100], emails[100], phoneNumbers[100], lines;
         const int Max = 100;
         string realPhoneNumbers[Max];
+        
+        // Dynamic column storage
+        string columnHeaders[MAX_COLUMNS];
+        string columnData[100][MAX_COLUMNS];
+        int totalColumns = 3; // Start with 3 columns (Names, Emails, Phone Numbers)
         int counter = 0;
 
         fstream fileInfo("NameArrangedDone.csv");
@@ -48,19 +53,51 @@ int main()
             return 1;
         }
 
+        // Parse header to get all column names
+        stringstream headerStream(lines);
+        string headerItem;
+        int headerCount = 0;
+        while (getline(headerStream, headerItem, ',') && headerCount < MAX_COLUMNS)
+        {
+            columnHeaders[headerCount] = headerItem;
+            headerCount++;
+        }
+        totalColumns = headerCount;
 
         cout << CYAN << "Fetching File Data...\n" << RESET;
         this_thread::sleep_for(chrono::seconds(2));
         cout << MAGENTA << "Printing Data\n" << RESET;
         this_thread::sleep_for(chrono::seconds(3));
 
-        cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
+        // Calculate dynamic table width
+        int tableWidth = 2 + ID_W + 2 + 2 + NAME_W + 2 + 2 + EMAIL_W + 2 + 2 + PHONENUMBER_W + 1;
+        for (int i = 3; i < totalColumns; i++)
+        {
+            tableWidth += 16; // 15 for column + 1 for separator
+        }
+        
+        // Print top border
+        cout << YELLOW;
+        for (int i = 0; i < tableWidth; i++) cout << "-";
+        cout << RESET << endl;
+        
         cout << left << setw(2) << "|" << BLUE << setw(ID_W) << "No." << RESET << setw(2)
             << "|" << CYAN << setw(NAME_W) << "Names" << RESET << setw(2)
             << "|" << MAGENTA << setw(EMAIL_W) << "Emails" << RESET << setw(2)
             << "|" << GREEN << setw(PHONENUMBER_W) << "Phone Number" << RESET
-            << "|\n";
-        cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
+            << "|";
+        
+        // Print additional column headers
+        for (int i = 3; i < totalColumns; i++)
+        {
+            cout << setw(15) << columnHeaders[i] << "|";
+        }
+        cout << "\n";
+        
+        // Print separator
+        cout << YELLOW;
+        for (int i = 0; i < tableWidth; i++) cout << "-";
+        cout << RESET << endl;
         
         while (getline(fileInfo, lines))
         {
@@ -77,6 +114,13 @@ int main()
             emails[counter] = email;
             phoneNumbers[counter] = phonenumber;
 
+            // Read additional columns
+            for (int i = 3; i < totalColumns; i++)
+            {
+                string extraData;
+                getline(ss, extraData, ',');
+                columnData[counter][i] = extraData;
+            }
 
             string extractedDigit = extractNumber(phonenumber);
 
@@ -103,43 +147,60 @@ int main()
             counter++;
         }
 
-
         for (int i = 0; i < counter; i++)
         {
             cout << left << setw(2) << "|"
                 << BLUE << setw(ID_W) << (i + 1) << RESET << setw(2) << "|"
                 << CYAN << setw(NAME_W) << names[i] << RESET << setw(2) << "|"
                 << MAGENTA << setw(EMAIL_W) << emails[i] << RESET << setw(2) << "|"
-                << GREEN << setw(PHONENUMBER_W) << realPhoneNumbers[i] << RESET << "|\n";
+                << GREEN << setw(PHONENUMBER_W) << realPhoneNumbers[i] << RESET << "|";
+            
+            // Print additional column data
+            for (int j = 3; j < totalColumns; j++)
+            {
+                cout << setw(15) << columnData[i][j] << "|";
+            }
+            cout << "\n";
         }
 
-        cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
+        // Print bottom border
+        cout << YELLOW;
+        for (int i = 0; i < tableWidth; i++) cout << "-";
+        cout << RESET << endl;
         
         fileInfo.close();
-
 
         fstream newInfoFile;
         newInfoFile.open("NameArrangedDone.csv", ios::in | ios::out);
 
-
         arrangedNames(names, emails, realPhoneNumbers, counter);
 
-        newInfoFile << "Names" << ',' << "Emails" << "," << "Phone Numbers\n";
-
+        // Write header with all columns
+        newInfoFile << "Names" << ',' << "Emails" << "," << "Phone Numbers";
+        for (int i = 3; i < totalColumns; i++)
+        {
+            newInfoFile << "," << columnHeaders[i];
+        }
+        newInfoFile << "\n";
 
         if (newInfoFile.is_open())
         {
             for (int i = 0; i < counter; i++)
             {
-                newInfoFile << names[i] << "," << emails[i] << "," << realPhoneNumbers[i] << endl;
+                newInfoFile << names[i] << "," << emails[i] << "," << realPhoneNumbers[i];
+                for (int j = 3; j < totalColumns; j++)
+                {
+                    newInfoFile << "," << columnData[i][j];
+                }
+                newInfoFile << endl;
             }
         }
 
-
         char answer; 
         cout << BLUE << "\n(P) to print the new data\n";
-        cout << BLUE << "(R) to remove a row(n) in data\n";
+        cout << BLUE << "(D) to delete a row(n) in data\n";
         cout << BLUE << "(C) to add another data\n";
+        cout << BLUE << "(R) to add a new data column\n";
         cout << BLUE << "(E) to exit\n";
         cout << "Choice: ";
         cin >> answer;
@@ -149,13 +210,34 @@ int main()
 
         if (upperChar == 'P')
         {
-            cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
+            // Calculate dynamic table width for print
+            int tableWidth = 2 + ID_W + 2 + 2 + NAME_W + 2 + 2 + EMAIL_W + 2 + 2 + PHONENUMBER_W + 1;
+            for (int i = 3; i < totalColumns; i++)
+            {
+                tableWidth += 16;
+            }
+            
+            // Print top border
+            cout << YELLOW;
+            for (int i = 0; i < tableWidth; i++) cout << "-";
+            cout << RESET << endl;
+            
             cout << left << setw(2) << "|" << BLUE << setw(ID_W) << "No." << RESET << setw(2)
                 << "|" << CYAN << setw(NAME_W) << "Names" << RESET << setw(2)
                 << "|" << MAGENTA << setw(EMAIL_W) << "Emails" << RESET << setw(2)
                 << "|" << GREEN << setw(PHONENUMBER_W) << "Phone Number" << RESET
-                << "|\n";
-            cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
+                << "|";
+            
+            for (int i = 3; i < totalColumns; i++)
+            {
+                cout << setw(15) << columnHeaders[i] << "|";
+            }
+            cout << "\n";
+            
+            // Print separator
+            cout << YELLOW;
+            for (int i = 0; i < tableWidth; i++) cout << "-";
+            cout << RESET << endl;
 
             for (int i = 0; i < counter; i++)
             {
@@ -163,16 +245,25 @@ int main()
                     << BLUE << setw(ID_W) << (i + 1) << RESET << setw(2) << "|"
                     << CYAN << setw(NAME_W) << names[i] << RESET << setw(2) << "|"
                     << MAGENTA << setw(EMAIL_W) << emails[i] << RESET << setw(2) << "|"
-                    << GREEN << setw(PHONENUMBER_W) << realPhoneNumbers[i] << RESET << "|\n";
+                    << GREEN << setw(PHONENUMBER_W) << realPhoneNumbers[i] << RESET << "|";
+                
+                for (int j = 3; j < totalColumns; j++)
+                {
+                    cout << setw(15) << columnData[i][j] << "|";
+                }
+                cout << "\n";
             }
 
-            cout << YELLOW << "--------------------------------------------------------------------------------" << RESET << endl;
+            // Print bottom border
+            cout << YELLOW;
+            for (int i = 0; i < tableWidth; i++) cout << "-";
+            cout << RESET << endl;
         }
             
-        else if (upperChar == 'R')
+        else if (upperChar == 'D')
         {
             int rowNumber;
-            cout << BLUE << "Enter the row number to remove (1-" << counter << "): ";
+            cout << BLUE << "Enter the row number to delete (1-" << counter << "): ";
             cin >> rowNumber;
             cout << RESET << "\n";
 
@@ -197,18 +288,34 @@ int main()
 
             realPhoneNumbers[counter] = validateDigitsOnly("Phone Number: ");
 
-            counter++;
+            // Initialize new row's extra columns to empty
+            for (int i = 3; i < totalColumns; i++)
+            {
+                columnData[counter][i] = "";
+            }
 
+            counter++;
 
             fstream newInfoFile;  
             newInfoFile.open("NameArrangedDone.csv", ios::out);
                 
             if (newInfoFile.is_open())
             {
-                newInfoFile << "Names" << ',' << "Emails" << "," << "Phone Numbers\n";
+                newInfoFile << "Names" << ',' << "Emails" << "," << "Phone Numbers";
+                for (int i = 3; i < totalColumns; i++)
+                {
+                    newInfoFile << "," << columnHeaders[i];
+                }
+                newInfoFile << "\n";
+                
                 for (int i = 0; i < counter; i++)
                 {
-                    newInfoFile << names[i] << "," << emails[i] << "," << realPhoneNumbers[i] << endl;
+                    newInfoFile << names[i] << "," << emails[i] << "," << realPhoneNumbers[i];
+                    for (int j = 3; j < totalColumns; j++)
+                    {
+                        newInfoFile << "," << columnData[i][j];
+                    }
+                    newInfoFile << endl;
                 }
             }
 
@@ -220,6 +327,62 @@ int main()
             cout << BLUE << "Existing Program\n\n" << RESET;
             this_thread::sleep_for(chrono::seconds(3));
             Exit = false;
+        }
+
+        else if (upperChar == 'R')
+        {
+            if (totalColumns >= MAX_COLUMNS)
+            {
+                cerr << RED << "Maximum number of columns reached!\n" << RESET;
+            }
+            else
+            {
+                string newColumnName;
+                cout << BLUE << "Enter the new column name\n";
+                cout << "Column Name: ";
+                cin >> newColumnName;
+                cout << RESET;
+
+                // Add new column header
+                columnHeaders[totalColumns] = newColumnName;
+
+                // Initialize all rows with empty data for new column
+                for (int i = 0; i < counter; i++)
+                {
+                    columnData[i][totalColumns] = "";
+                }
+
+                totalColumns++;
+
+                fstream newFile;
+                newFile.open("NameArrangedDone.csv", ios::out);
+
+                if (newFile.is_open())
+                {
+                    // Write header with new column
+                    newFile << "Names" << ',' << "Emails" << "," << "Phone Numbers";
+                    for (int i = 3; i < totalColumns; i++)
+                    {
+                        newFile << "," << columnHeaders[i];
+                    }
+                    newFile << "\n";
+
+                    // Write all data rows with new column
+                    for (int i = 0; i < counter; i++)
+                    {
+                        newFile << names[i] << "," << emails[i] << "," << realPhoneNumbers[i];
+                        for (int j = 3; j < totalColumns; j++)
+                        {
+                            newFile << "," << columnData[i][j];
+                        }
+                        newFile << endl;
+                    }
+                }
+                
+                newFile.close();
+                
+                cout << GREEN << "Column '" << newColumnName << "' added successfully!\n" << RESET;
+            }
         }
 
         else
@@ -241,7 +404,6 @@ int main()
     return 0;
 }
 
-
 void arrangedNames(string Names[], string Emails[], string PhoneNumber[], int Limiter)
 {
     for (int i = 0; i < Limiter; i++)
@@ -262,13 +424,9 @@ void arrangedNames(string Names[], string Emails[], string PhoneNumber[], int Li
                 PhoneNumber[j] = PhoneNumber[j + 1];
                 PhoneNumber[j + 1] = tempPhone; 
             }
-            
         }
-        
     }
-    
 }
-
 
 void removeCSVRow(string filename, int rowToRemove)
 {
@@ -283,7 +441,6 @@ void removeCSVRow(string filename, int rowToRemove)
     string line;
     int currentRow = 0;
 
-
     while (getline(file, line))
     {
         currentRow++;
@@ -293,13 +450,10 @@ void removeCSVRow(string filename, int rowToRemove)
     }
     file.close();
 
-
     file.open(filename, ios::out | ios::trunc);
     file << content;
     file.close();
 }
-
-
 
 string extractNumber(string phoneNum)
 {
@@ -313,7 +467,6 @@ string extractNumber(string phoneNum)
     }
     return Number;
 }
-
 
 string validateDigitsOnly(string prompt)
 {
