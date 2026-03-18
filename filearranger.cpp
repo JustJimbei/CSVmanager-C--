@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <fstream>
 #include <sstream>
+#include <vector>
 #include <string>
 #include <thread>
 #include <chrono>
@@ -19,12 +20,13 @@
 #define NAME_W          19
 #define EMAIL_W         34
 #define PHONENUMBER_W   14
+#define AGE_W            6
 
 using namespace std;
 
 const int MAX_COLUMNS = 50;
 
-void arrangedNames(string Names[], string Emails[], string PhoneNumber[], int Limiter);
+void arrangedNames(vector <string> &Names, vector <string> &Emails, vector <string> &PhoneNumber, int low, int high);
 void removeCSVRow(string filename, int rowToRemove);
 string extractNumber(string phoneNum);
 string validateDigitsOnly(string prompt);
@@ -34,29 +36,35 @@ int main()
     bool Exit = true;
     while (Exit)
     {
-        string names[100], emails[100], phoneNumbers[100], lines;
-        const int Max = 100;
-        string realPhoneNumbers[Max];
+        vector <string> names;
+        vector <string> emails;
+        vector <string> phoneNumbers;
+        string lines;
+
+        vector <string> realPhoneNumbers;
         
-        // Dynamic column storage
+        
         string columnHeaders[MAX_COLUMNS];
-        string columnData[100][MAX_COLUMNS];
-        int totalColumns = 3; // Start with 3 columns (Names, Emails, Phone Numbers)
+
+        vector <vector <string>> columnData;
+
+        int totalColumns = 3; 
         int counter = 0;
 
         fstream fileInfo("NameArrangedDone.csv");
-        getline(fileInfo, lines);
-
+        
         if (!fileInfo.is_open())
         {
             cerr << RED << setw(15) << "Error!\n" << RESET;
             return 1;
         }
-
-        // Parse header to get all column names
+        
+        getline(fileInfo, lines);
+        
         stringstream headerStream(lines);
         string headerItem;
         int headerCount = 0;
+
         while (getline(headerStream, headerItem, ',') && headerCount < MAX_COLUMNS)
         {
             columnHeaders[headerCount] = headerItem;
@@ -69,14 +77,14 @@ int main()
         cout << MAGENTA << "Printing Data\n" << RESET;
         this_thread::sleep_for(chrono::seconds(3));
 
-        // Calculate dynamic table width
+        
         int tableWidth = 2 + ID_W + 2 + 2 + NAME_W + 2 + 2 + EMAIL_W + 2 + 2 + PHONENUMBER_W + 1;
         for (int i = 3; i < totalColumns; i++)
         {
-            tableWidth += 16; // 15 for column + 1 for separator
+            tableWidth += 16; 
         }
         
-        // Print top border
+        
         cout << YELLOW;
         for (int i = 0; i < tableWidth; i++) cout << "-";
         cout << RESET << endl;
@@ -87,14 +95,19 @@ int main()
             << "|" << GREEN << setw(PHONENUMBER_W) << "Phone Number" << RESET
             << "|";
         
-        // Print additional column headers
+        
         for (int i = 3; i < totalColumns; i++)
         {
-            cout << setw(15) << columnHeaders[i] << "|";
+            if (columnHeaders[i] == "Ages")
+                cout << YELLOW << setw(AGE_W) << columnHeaders[i] << RESET << "|";
+            else if (columnHeaders[i] == "Sex")
+                cout << CYAN << setw(8) << columnHeaders[i] << RESET << "|";
+            else
+                cout << MAGENTA << setw(15) << columnHeaders[i] << RESET << "|";
         }
         cout << "\n";
         
-        // Print separator
+        
         cout << YELLOW;
         for (int i = 0; i < tableWidth; i++) cout << "-";
         cout << RESET << endl;
@@ -110,31 +123,37 @@ int main()
             getline(ss, email, ',');
             getline(ss, phonenumber, ',');
 
-            names[counter] = name;
-            emails[counter] = email;
-            phoneNumbers[counter] = phonenumber;
+            // names[counter] = name;
+            names.push_back(name);
+            // emails[counter] = email;
+            emails.push_back(email);
+            // phoneNumbers[counter] = phonenumber; 
+            phoneNumbers.push_back(phonenumber);
+            
 
-            // Read additional columns
+            vector <string> rowExtras(MAX_COLUMNS);
+
             for (int i = 3; i < totalColumns; i++)
             {
                 string extraData;
                 getline(ss, extraData, ',');
-                columnData[counter][i] = extraData;
+                rowExtras[i] = extraData;
             }
+            columnData.push_back(rowExtras);
 
             string extractedDigit = extractNumber(phonenumber);
 
             if (extractedDigit.empty())
             {
                 cerr << RED << "Data Empty! Row\n" << counter << RESET;
-                realPhoneNumbers[counter] = "0";
+                realPhoneNumbers.push_back("0");
             }
             
             else
             {
                 try
                 {
-                    realPhoneNumbers[counter] = (extractedDigit);
+                    realPhoneNumbers.push_back(extractedDigit);
                 }
                 catch (const std::exception &e)
                 {
@@ -155,25 +174,37 @@ int main()
                 << MAGENTA << setw(EMAIL_W) << emails[i] << RESET << setw(2) << "|"
                 << GREEN << setw(PHONENUMBER_W) << realPhoneNumbers[i] << RESET << "|";
             
-            // Print additional column data
+            
             for (int j = 3; j < totalColumns; j++)
             {
-                cout << setw(15) << columnData[i][j] << "|";
+                if (columnHeaders[j] == "Ages")
+                {
+                    cout << YELLOW << setw(AGE_W) << columnData[i][j] << RESET << "|";
+                }
+                else if (columnHeaders[j] == "Sex")
+                {
+                    cout << CYAN << setw(8) << columnData[i][j] << RESET << "|";
+                }
+                else
+                {
+                    cout << MAGENTA << setw(15) << columnData[i][j] << RESET << "|";
+                }
             }
             cout << "\n";
         }
 
-        // Print bottom border
+        
         cout << YELLOW;
         for (int i = 0; i < tableWidth; i++) cout << "-";
         cout << RESET << endl;
         
         fileInfo.close();
 
-        fstream newInfoFile;
-        newInfoFile.open("NameArrangedDone.csv", ios::in | ios::out);
+        arrangedNames(names, emails, realPhoneNumbers, 0, counter - 1); // having trouble with this part bro
 
-        arrangedNames(names, emails, realPhoneNumbers, counter);
+
+        fstream newInfoFile;
+        newInfoFile.open("NameArrangedDone.csv", ios::in | ios::trunc);
 
         // Write header with all columns
         newInfoFile << "Names" << ',' << "Emails" << "," << "Phone Numbers";
@@ -210,14 +241,14 @@ int main()
 
         if (upperChar == 'P')
         {
-            // Calculate dynamic table width for print
+            
             int tableWidth = 2 + ID_W + 2 + 2 + NAME_W + 2 + 2 + EMAIL_W + 2 + 2 + PHONENUMBER_W + 1;
             for (int i = 3; i < totalColumns; i++)
             {
                 tableWidth += 16;
             }
             
-            // Print top border
+            
             cout << YELLOW;
             for (int i = 0; i < tableWidth; i++) cout << "-";
             cout << RESET << endl;
@@ -234,7 +265,7 @@ int main()
             }
             cout << "\n";
             
-            // Print separator
+            
             cout << YELLOW;
             for (int i = 0; i < tableWidth; i++) cout << "-";
             cout << RESET << endl;
@@ -254,7 +285,7 @@ int main()
                 cout << "\n";
             }
 
-            // Print bottom border
+            
             cout << YELLOW;
             for (int i = 0; i < tableWidth; i++) cout << "-";
             cout << RESET << endl;
@@ -280,15 +311,26 @@ int main()
 
             cin.ignore();
 
+            // changed this part to dynamic(maybe we can change it to linkedlist nextime)
+            string newName, newEmail;
+
             cout << "Name: ";
-            getline(cin, names[counter]);
+            getline(cin, newName);
 
             cout << "Email: ";
-            cin >> emails[counter];
+            cin >> newEmail;
 
-            realPhoneNumbers[counter] = validateDigitsOnly("Phone Number: ");
+            string newPhone = validateDigitsOnly("Phone Number: ");
 
-            // Initialize new row's extra columns to empty
+            // we need to change to linkedlist nextime bro(Hate it)
+            names.push_back(newName);
+            emails.push_back(newEmail);
+            realPhoneNumbers.push_back(newPhone);
+
+            //Ill handle this part if transfer to linkedlist
+            vector <string> emptyRow(MAX_COLUMNS, "");
+            columnData.push_back(emptyRow);
+            
             for (int i = 3; i < totalColumns; i++)
             {
                 columnData[counter][i] = "";
@@ -343,10 +385,10 @@ int main()
                 cin >> newColumnName;
                 cout << RESET;
 
-                // Add new column header
+                
                 columnHeaders[totalColumns] = newColumnName;
 
-                // Initialize all rows with empty data for new column
+                
                 for (int i = 0; i < counter; i++)
                 {
                     columnData[i][totalColumns] = "";
@@ -359,7 +401,7 @@ int main()
 
                 if (newFile.is_open())
                 {
-                    // Write header with new column
+                    
                     newFile << "Names" << ',' << "Emails" << "," << "Phone Numbers";
                     for (int i = 3; i < totalColumns; i++)
                     {
@@ -367,7 +409,7 @@ int main()
                     }
                     newFile << "\n";
 
-                    // Write all data rows with new column
+                    
                     for (int i = 0; i < counter; i++)
                     {
                         newFile << names[i] << "," << emails[i] << "," << realPhoneNumbers[i];
@@ -404,9 +446,37 @@ int main()
     return 0;
 }
 
-void arrangedNames(string Names[], string Emails[], string PhoneNumber[], int Limiter)
+// Ill change it to quicksort cause bubble is trash
+void arrangedNames(vector <string> &Names, vector <string> &Emails, vector <string> &PhoneNumber, int low, int high)
 {
-    for (int i = 0; i < Limiter; i++)
+
+    if (low < high)
+    {
+        string pivot = Names[high];
+        int i = low - 1;
+
+        for (int j = low; j < high; j++)
+        {
+            if (Names[j] <= pivot)
+            {
+                i++;
+                swap(Names[i], Names[j]);
+                swap(Emails[i], Emails[j]);
+                swap(PhoneNumber[i], PhoneNumber[j]);
+            }
+        }
+
+        swap(Names[i + 1], Names[high]);
+        swap(Emails[i + 1], Emails[high]);
+        swap(PhoneNumber[i + 1], PhoneNumber[high]);
+
+        int pivotIndex = i + 1;
+        
+        arrangedNames(Names, Emails, PhoneNumber, low, pivotIndex - 1);
+        arrangedNames(Names, Emails, PhoneNumber, pivotIndex + 1, high);
+    }
+    
+    /* for (int i = 0; i < Limiter; i++)
     {
         for (int j = 0; j < Limiter - i - 1; j++)
         {
@@ -425,7 +495,8 @@ void arrangedNames(string Names[], string Emails[], string PhoneNumber[], int Li
                 PhoneNumber[j + 1] = tempPhone; 
             }
         }
-    }
+    } */
+   
 }
 
 void removeCSVRow(string filename, int rowToRemove)
